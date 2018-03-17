@@ -94,6 +94,10 @@ function getSubExpressions(formula) {
 
 // uses an Ohm grammar to parse and evaluate arithmetic
 function evalArithmetic(value) {
+
+  // Todo: is there a way to init the grammar once rather than
+  // redoing it on every eval call?
+
   var g = ohm.grammar('Arithmetic {' + "\n" +
     '  Exp = AddExp' + "\n" +
     '  AddExp = AddExp "+" PriExp  -- plus' + "\n" +
