@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <!-- The CSS package above applies Google styling to buttons and other elements. -->
+    
+    <style>
+      body {
+        padding: 8px;
+      }
+      #error {
+        font-weight: bold;
+        color: red;
+        margin: 10px 0;
+      }
+      
+      .code {
+        font-family: monospace;
+      }
+      
+      #formula {
+        margin-bottom: 20px;
+      }
+      
+      .subexpression {
+        color: green;
+        margin-bottom: 10px;
+      }
+      
+    </style>
+  </head>
+  <body>
+    <div id="error" style="display: none"></div>
+    <div id="formula" class="code"></div> 
+    <div id="subexpressions" class="code"></div> 
+    
+    <script>
+      var networkFailureCount = 0;
+      
+      function poll() {
+        setTimeout(function () {
+          google.script.run
+            .withSuccessHandler(
+              function(result) {
+                networkFailureCount = 0;
+                var errorElement = document.querySelector('#error');
+                errorElement.style.display = 'none';
+                
+                document.querySelector('#formula').innerText = result.formula;
+                
+                document.querySelector('#subexpressions').innerHTML = "";
+                result.subexpressions.forEach( function(subexpression) {
+                  var subexprElement = document.createElement("div");
+                  subexprElement.classList.add("subexpression");
+                  subexprElement.innerText = "Formula: "+ subexpression.formula + "\n" + "Result: " + subexpression.result;
+                  document.querySelector('#subexpressions').appendChild(subexprElement);
+                });
+                poll();
+              })
+            .withFailureHandler(
+              function(msg) {
+                networkFailureCount += 1;
+                
+                if (networkFailureCount >= 3) {
+                
+                  var errorElement = document.querySelector('#error');
+                  errorElement.innerText = 'There seems to be trouble reaching Google. Are you connected to the internet?';
+                  errorElement.style.display = 'block';
+                }
+                
+                poll();
+              })
+            .withUserObject(this)
+            .getCurrentFormula();
+        }, 500);
+      }
+      
+      poll();
+        
+    </script>
+  </body>
+</html>
+
+
