@@ -4,7 +4,7 @@
     <base target="_top">
     <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
     <!-- The CSS package above applies Google styling to buttons and other elements. -->
-    
+
     <style>
       body {
         padding: 8px;
@@ -14,30 +14,37 @@
         color: red;
         margin: 10px 0;
       }
-      
+
       .code {
         font-family: monospace;
       }
-      
+
       #formula {
         margin-bottom: 20px;
       }
-      
+
       .subexpression {
-        color: green;
+        color: blue;
         margin-bottom: 10px;
       }
-      
+
     </style>
   </head>
   <body>
+
+    <h1>Sheets formula evaluation</h1>
+    <p>Select a formula cell and see evaluated results:</p>
     <div id="error" style="display: none"></div>
-    <div id="formula" class="code"></div> 
-    <div id="subexpressions" class="code"></div> 
-    
+    <div id="formula" class="code"></div>
+    <div id="subexpressions" class="code"></div>
+
+    <h1>Ohm parsing</h1>
+    <p>Select a non-formula cell with arithmetic, and see Ohm-evaluated result:</p>
+    <div id="parsed" class="code"></div>
+
     <script>
       var networkFailureCount = 0;
-      
+
       function poll() {
         setTimeout(function () {
           google.script.run
@@ -46,9 +53,10 @@
                 networkFailureCount = 0;
                 var errorElement = document.querySelector('#error');
                 errorElement.style.display = 'none';
-                
+
                 document.querySelector('#formula').innerText = result.formula;
-                
+                document.querySelector('#parsed').innerText = result.arithmeticResult;
+
                 document.querySelector('#subexpressions').innerHTML = "";
                 result.subexpressions.forEach( function(subexpression) {
                   var subexprElement = document.createElement("div");
@@ -61,23 +69,23 @@
             .withFailureHandler(
               function(msg) {
                 networkFailureCount += 1;
-                
+
                 if (networkFailureCount >= 3) {
-                
+
                   var errorElement = document.querySelector('#error');
                   errorElement.innerText = 'There seems to be trouble reaching Google. Are you connected to the internet?';
                   errorElement.style.display = 'block';
                 }
-                
+
                 poll();
               })
             .withUserObject(this)
-            .getCurrentFormula();
+            .processCurrentCell();
         }, 500);
       }
-      
+
       poll();
-        
+
     </script>
   </body>
 </html>

@@ -70,14 +70,14 @@ function evalFormula(formula) {
 //
 // For the moment, this is just a super naive proof of concept.
 // All it does is extract leaf expressions with no nested parens.
-// 
+//
 // for real subexpression parsing a better approach is needed.
 // This JS Excel formula parser might be useful:
 // http://ewbi.blogs.com/develops/2004/12/excel_formula_p.html
 function getSubExpressions(formula) {
   var subExpressions = formula.match(/[A-Z]*\([^\(\)]*\)/g);
   var subExpressionsWithResults = []
-  
+
   if (subExpressions !== null) {
     subExpressions.forEach(function (subexpr) {
       subExpressionsWithResults.push(
@@ -88,17 +88,69 @@ function getSubExpressions(formula) {
       );
     });
   }
-  
+
   return subExpressionsWithResults;
 }
 
-// Get the current formula and its subexpressions w/ results
-function getCurrentFormula() {
+// uses an Ohm grammar to parse and evaluate arithmetic
+function evalArithmetic(value) {
+  var g = ohm.grammar('Arithmetic {' + "\n" +
+    '  Exp = AddExp' + "\n" +
+    '  AddExp = AddExp "+" PriExp  -- plus' + "\n" +
+    '         | AddExp "-" PriExp  -- minus' + "\n" +
+    '         | PriExp' + "\n" +
+    '  PriExp = "(" Exp ")"  -- paren' + "\n" +
+    '         | number' + "\n" +
+    '  number = digit+' + "\n" +
+    '}')
+
+  // Define an operation named 'eval' which evaluates the expression.
+  // See https://github.com/cdglabs/ohm/blob/master/doc/api-reference.md#semantics
+  var semantics = g.createSemantics().addOperation('eval', {
+    Exp: function(e) {
+      return e.eval();
+    },
+    AddExp: function(e) {
+      return e.eval();
+    },
+    AddExp_plus: function(left, op, right) {
+      return left.eval() + right.eval();
+    },
+    AddExp_minus: function(left, op, right) {
+      return left.eval() - right.eval();
+    },
+    PriExp: function(e) {
+      return e.eval();
+    },
+    PriExp_paren: function(open, exp, close) {
+      return exp.eval();
+    },
+    number: function(chars) {
+      return parseInt(this.sourceString, 10);
+    },
+  });
+
+  var result;
+  var m = g.match(value);
+  if (m.succeeded()) {
+    result = semantics(m).eval();  // Evaluate the expression.
+  } else {
+    result = m.message;  // Extract the error message.
+  }
+
+  return result;
+}
+
+function processCurrentCell () {
   var formula = SpreadsheetApp.getActiveRange().getFormula();
-  
+  var value = SpreadsheetApp.getActiveRange().getValue();
+
+  console.log("processing", formula, value);
+
   return {
     formula: formula,
-    subexpressions: getSubExpressions(formula)
+    subexpressions: getSubExpressions(formula),
+    arithmeticResult: evalArithmetic(value)
   }
 }
 
